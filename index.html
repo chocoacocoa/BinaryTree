@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Binary Search Tree Visualizer & C# Code Explorer</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            900: '#0c4a6e',
+                        },
+                        codebg: '#0d1117',
+                        codeborder: '#30363d'
+                    },
+                    fontFamily: {
+                        mono: ['JetBrains Mono', 'Fira Code', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .code-font {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        /* Custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #161b22;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #30363d;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #484f58;
+        }
+        
+        /* Node animation effects */
+        .node-element {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .edge-element {
+            transition: all 0.4s ease;
+        }
+        
+        /* Code line highlight */
+        .highlight-line {
+            background-color: rgba(14, 165, 233, 0.25);
+            border-left: 3px solid #0ea5e9;
+            color: #ffffff;
+        }
+        .highlight-active-match {
+            background-color: rgba(34, 197, 94, 0.25);
+            border-left: 3px solid #22c55e;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col overflow-x-hidden">
+
+    <!-- Header Navigation -->
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-9 h-9 rounded-lg bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-sky-500/20">
+                    <i class="fa-solid fa-code-branch text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-none bg-gradient-to-r from-slate-100 to-slate-400 bg-clip-text text-transparent">BST Interactive Explorer</h1>
+                    <span class="text-xs text-sky-400 font-mono">C# Implementation Visualizer</span>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-3">
+                <button id="presetDemoBtn" class="px-3 py-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-md border border-slate-700 transition flex items-center space-x-2">
+                    <i class="fa-solid fa-rotate-left"></i>
+                    <span>Reload C# Demo (5, 6, 4, 3)</span>
+                </button>
+                <button id="clearTreeBtn" class="px-3 py-1.5 text-xs font-medium bg-red-950/40 hover:bg-red-900/60 text-red-300 border border-red-800/50 rounded-md transition flex items-center space-x-2">
+                    <i class="fa-solid fa-trash-can"></i>
+                    <span>Clear Tree</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Left / Top Panel: Visualizer & Controls (7 Cols) -->
+        <div class="lg:col-span-7 flex flex-col gap-4">
+
+            <!-- Control Bar Card -->
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-xl">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    
+                    <!-- Insert Input -->
+                    <div class="flex flex-col gap-1">
+                        <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Insert Value</label>
+                        <div class="flex gap-1.5">
+                            <input type="number" id="insertInput" placeholder="e.g. 8" class="w-full bg-slate-950 border border-slate-700 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 rounded-lg px-3 py-1.5 text-sm outline-none transition font-mono" />
+                            <button id="insertBtn" class="px-3 py-1.5 bg-sky-600 hover:bg-sky-500 text-white rounded-lg text-sm font-medium transition flex items-center justify-center shrink-0">
+                                <i class="fa-solid fa-plus mr-1.5 text-xs"></i> Insert
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Search Input -->
+                    <div class="flex flex-col gap-1">
+                        <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Search Node</label>
+                        <div class="flex gap-1.5">
+                            <input type="number" id="searchInput" placeholder="e.g. 4" class="w-full bg-slate-950 border border-slate-700 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-lg px-3 py-1.5 text-sm outline-none transition font-mono" />
+                            <button id="searchBtn" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-medium transition flex items-center justify-center shrink-0">
+                                <i class="fa-solid fa-magnifying-glass mr-1.5 text-xs"></i> Search
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Traversal & Tools -->
+                    <div class="flex flex-col gap-1">
+                        <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Operations</label>
+                        <div class="flex gap-1.5">
+                            <button id="inOrderBtn" class="w-full px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium transition flex items-center justify-center">
+                                <i class="fa-solid fa-play mr-1.5 text-xs"></i> In-Order
+                            </button>
+                            <button id="randomTreeBtn" title="Randomize Tree" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-lg text-sm font-medium transition shrink-0">
+                                <i class="fa-solid fa-dice"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Animation Speed & Controls Footer -->
+                <div class="mt-4 pt-3 border-t border-slate-800/80 flex flex-wrap items-center justify-between text-xs text-slate-400 gap-2">
+                    <div class="flex items-center space-x-3">
+                        <span>Speed:</span>
+                        <input type="range" id="speedSlider" min="200" max="1500" value="700" class="w-24 accent-sky-500 cursor-pointer" />
+                        <span id="speedValue" class="font-mono">700ms</span>
+                    </div>
+
+                    <!-- Status Indicator -->
+                    <div class="flex items-center space-x-2">
+                        <span id="statusIndicator" class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span id="statusText" class="font-medium text-slate-300">Ready</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visual Canvas Container -->
+            <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xl flex-1 flex flex-col min-h-[420px] relative">
+                
+                <!-- Legend Overlay -->
+                <div class="absolute top-3 right-3 bg-slate-950/80 backdrop-blur border border-slate-800 rounded-lg p-2.5 text-[11px] flex flex-col gap-1.5 z-10">
+                    <div class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full bg-slate-800 border-2 border-sky-500 inline-block"></span>
+                        <span class="text-slate-300">Normal Node</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full bg-amber-500 border-2 border-amber-300 inline-block shadow-sm shadow-amber-500"></span>
+                        <span class="text-slate-300">Visiting / Comparing</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full bg-emerald-500 border-2 border-emerald-300 inline-block shadow-sm shadow-emerald-500"></span>
+                        <span class="text-slate-300">Found Target</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full bg-indigo-500 border-2 border-indigo-300 inline-block"></span>
+                        <span class="text-slate-300">In-Order Visited</span>
+                    </div>
+                </div>
+
+                <!-- SVG Tree Rendering Canvas -->
+                <div class="w-full flex-1 min-h-[380px] bg-slate-950 relative overflow-hidden" id="canvasContainer">
+                    <svg id="treeSvg" class="w-full h-full min-h-[380px] cursor-grab active:cursor-grabbing">
+                        <g id="edgesGroup"></g>
+                        <g id="nodesGroup"></g>
+                    </svg>
+                    <div id="emptyTreeMsg" class="hidden absolute inset-0 flex flex-col items-center justify-center text-slate-500 gap-2">
+                        <i class="fa-solid fa-tree text-4xl"></i>
+                        <p class="text-sm">Tree is empty. Insert a value to start.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Program Console Output Log -->
+            <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xl flex flex-col h-40">
+                <div class="bg-slate-950/60 px-4 py-2 border-b border-slate-800 flex justify-between items-center">
+                    <span class="text-xs font-semibold text-slate-400 flex items-center gap-2 font-mono">
+                        <i class="fa-solid fa-terminal text-sky-400"></i> Console Output Log
+                    </span>
+                    <button id="clearLogBtn" class="text-[11px] text-slate-500 hover:text-slate-300 transition">Clear Console</button>
+                </div>
+                <div id="consoleLog" class="p-3 font-mono text-xs overflow-y-auto flex-1 flex flex-col gap-1 bg-slate-950 text-slate-300">
+                    <div class="text-slate-500">// Program execution output will appear here</div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Right / Bottom Panel: Code Reference & Execution Tracing (5 Cols) -->
+        <div class="lg:col-span-5 flex flex-col">
+            <div class="bg-codebg border border-codeborder rounded-xl flex-1 flex flex-col shadow-xl overflow-hidden">
+                
+                <!-- Code Header -->
+                <div class="bg-slate-900/90 px-4 py-3 border-b border-codeborder flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <span class="w-3 h-3 rounded-full bg-red-500 inline-block"></span>
+                        <span class="w-3 h-3 rounded-full bg-yellow-500 inline-block"></span>
+                        <span class="w-3 h-3 rounded-full bg-green-500 inline-block"></span>
+                        <span class="ml-2 font-mono text-xs text-slate-400">Program.cs</span>
+                    </div>
+                    <span class="text-xs text-sky-400 font-mono flex items-center gap-1">
+                        <i class="fa-brands fa-microsoft"></i> C# .NET
+                    </span>
+                </div>
+
+                <!-- Code Container with interactive Line Highlighting -->
+                <div class="p-3 overflow-y-auto flex-1 code-font text-xs leading-relaxed text-slate-300" id="codeContainer">
+                    
+<pre class="m-0"><code id="codeBlock"><!-- Line items injected dynamically for active line highlighting --></code></pre>
+
+                </div>
+
+                <!-- Footer Explanation Card -->
+                <div class="p-3.5 bg-slate-900/60 border-t border-codeborder text-xs text-slate-400 flex flex-col gap-1">
+                    <div class="font-semibold text-slate-200 flex items-center gap-1.5">
+                        <i class="fa-solid fa-circle-info text-sky-400"></i> Code Execution Tracking
+                    </div>
+                    <p id="codeExplanation">As tree operations execute, the active C# code path highlights in real-time above.</p>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // C# Source code lines mapped for synchronized visualization
+        const CSharpCode = [
+            { id: 1, text: 'using System;' },
+            { id: 2, text: '' },
+            { id: 3, text: 'public class BSnode {' },
+            { id: 4, text: '    public int data;' },
+            { id: 5, text: '    public BSnode? left;' },
+            { id: 6, text: '    public BSnode? right;' },
+            { id: 7, text: '' },
+            { id: 8, text: '    public BSnode(int data) {' },
+            { id: 9, text: '        this.data = data;' },
+            { id: 10, text: '        left = null;' },
+            { id: 11, text: '        right = null;' },
+            { id: 12, text: '    }' },
+            { id: 13, text: '}' },
+            { id: 14, text: '' },
+            { id: 15, text: 'class Program {' },
+            { id: 16, text: '    public static BSnode? root;' },
+            { id: 17, text: '' },
+            { id: 18, text: '    public static BSnode? insertRecursion(BSnode? current, int data) {' },
+            { id: 19, text: '        if (current == null) {' },
+            { id: 20, text: '            return new BSnode(data);' },
+            { id: 21, text: '        }' },
+            { id: 22, text: '        if (data < current.data) {' },
+            { id: 23, text: '            current.left = insertRecursion(current.left, data);' },
+            { id: 24, text: '        } else if (data > current.data) {' },
+            { id: 25, text: '            current.right = insertRecursion(current.right, data);' },
+            { id: 26, text: '        }' },
+            { id: 27, text: '        return current;' },
+            { id: 28, text: '    }' },
+            { id: 29, text: '' },
+            { id: 30, text: '    public static bool searchRecursion(BSnode? current, int target) {' },
+            { id: 31, text: '        if (current == null) return false;' },
+            { id: 32, text: '        if (current.data == target) return true;' },
+            { id: 33, text: '        if (target < current.data)' },
+            { id: 34, text: '            return searchRecursion(current.left, target);' },
+            { id: 35, text: '        else' },
+            { id: 36, text: '            return searchRecursion(current.right, target);' },
+            { id: 37, text: '    }' },
+            { id: 38, text: '' },
+            { id: 39, text: '    public static void printInOrder(BSnode? node) {' },
+            { id: 40, text: '        if (node != null) {' },
+            { id: 41, text: '            printInOrder(node.left);' },
+            { id: 42, text: '            Console.Write(node.data + " ");' },
+            { id: 43, text: '            printInOrder(node.right);' },
+            { id: 44, text: '        }' },
+            { id: 45, text: '    }' },
+            { id: 46, text: '' },
+            { id: 47, text: '    static void Main(string[] args) {' },
+            { id: 48, text: '        Console.WriteLine("=== BST INSERT & SEARCH DEMO ===");' },
+            { id: 49, text: '        root = insertRecursion(root, 5);' },
+            { id: 50, text: '        root = insertRecursion(root, 6);' },
+            { id: 51, text: '        root = insertRecursion(root, 4);' },
+            { id: 52, text: '        root = insertRecursion(root, 3);' },
+            { id: 53, text: '        printInOrder(root);' },
+            { id: 54, text: '    }' },
+            { id: 55, text: '}' }
+        ];
+
+        // BSNode class representation in JS
+        class BSNode {
+            constructor(data) {
+                this.data = data;
+                this.left = null;
+                this.right = null;
+                this.id = Math.random().toString(36).substr(2, 9);
+                // Canvas coordinates
+                this.x = 0;
+                this.y = 0;
+            }
+        }
+
+        // Global State
+        let root = null;
+        let isAnimating = false;
+        let animationDelay = 700;
+
+        // Render C# Code block
+        function initCodePanel() {
+            const codeBlock = document.getElementById('codeBlock');
+            codeBlock.innerHTML = '';
+            
+            CSharpCode.forEach(lineObj => {
+                const lineDiv = document.createElement('div');
+                lineDiv.id = `code-line-${lineObj.id}`;
+                lineDiv.className = 'px-2 py-0.5 rounded flex transition-colors duration-200 hover:bg-slate-800/40';
+                
+                const numSpan = document.createElement('span');
+                numSpan.className = 'w-8 shrink-0 text-slate-600 select-none text-right pr-3 font-mono text-[11px]';
+                numSpan.textContent = lineObj.id;
+
+                const textSpan = document.createElement('span');
+                textSpan.className = 'whitespace-pre';
+                
+                // Light syntax highlighting helper
+                let text = lineObj.text
+                    .replace(/\b(using|public|class|static|void|int|bool|null|return|if|else|new)\b/g, '<span class="text-purple-400 font-semibold">$1</span>')
+                    .replace(/\b(BSnode|Program|Console)\b/g, '<span class="text-sky-300 font-medium">$1</span>')
+                    .replace(/("//.*")/g, '<span class="text-slate-500">$1</span>')
+                    .replace(/(".*?")/g, '<span class="text-amber-300">$1</span>');
+
+                textSpan.innerHTML = text;
+                
+                lineDiv.appendChild(numSpan);
+                lineDiv.appendChild(textSpan);
+                codeBlock.appendChild(lineDiv);
+            });
+        }
+
+        // Highlight line in code panel
+        function highlightCodeLine(lineNum, match = false, explanation = '') {
+            // Remove previous highlights
+            document.querySelectorAll('#codeBlock > div').forEach(el => {
+                el.classList.remove('highlight-line', 'highlight-active-match');
+            });
+
+            if (lineNum) {
+                const el = document.getElementById(`code-line-${lineNum}`);
+                if (el) {
+                    el.classList.add(match ? 'highlight-active-match' : 'highlight-line');
+                    el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            }
+
+            if (explanation) {
+                document.getElementById('codeExplanation').textContent = explanation;
+            }
+        }
+
+        // Sleep helper for async animation steps
+        const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+        // Console Logging
+        function appendConsoleLog(message, type = 'info') {
+            const consoleLog = document.getElementById('consoleLog');
+            const entry = document.createElement('div');
+            
+            let typeColor = 'text-slate-300';
+            if (type === 'success') typeColor = 'text-emerald-400';
+            if (type === 'highlight') typeColor = 'text-amber-400';
+            if (type === 'error') typeColor = 'text-red-400';
+            if (type === 'system') typeColor = 'text-sky-400';
+
+            entry.className = `${typeColor} flex items-start space-x-2`;
+            entry.innerHTML = `<span class="text-slate-600 font-mono">&gt;</span> <span>${message}</span>`;
+            
+            consoleLog.appendChild(entry);
+            consoleLog.scrollTop = consoleLog.scrollHeight;
+        }
+
+        function clearConsoleLog() {
+            document.getElementById('consoleLog').innerHTML = '<div class="text-slate-500">// Program execution output will appear here</div>';
+        }
+
+        // Tree Visual Layout Calculation
+        function calculateCoordinates(node, depth = 0, leftBound = 0, rightBound = 1000, canvasWidth = 800) {
+            if (!node) return;
+            
+            const yOffset = 60;
+            const levelHeight = 70;
+            
+            const x = (leftBound + rightBound) / 2;
+            const y = yOffset + depth * levelHeight;
+
+            node.x = x;
+            node.y = y;
+
+            if (node.left) calculateCoordinates(node.left, depth + 1, leftBound, x, canvasWidth);
+            if (node.right) calculateCoordinates(node.right, depth + 1, x, rightBound, canvasWidth);
+        }
+
+        // Render SVG Tree
+        function renderTree(highlightState = {}) {
+            const svg = document.getElementById('treeSvg');
+            const nodesGroup = document.getElementById('nodesGroup');
+            const edgesGroup = document.getElementById('edgesGroup');
+            const emptyMsg = document.getElementById('emptyTreeMsg');
+
+            nodesGroup.innerHTML = '';
+            edgesGroup.innerHTML = '';
+
+            if (!root) {
+                emptyMsg.classList.remove('hidden');
+                return;
+            } else {
+                emptyMsg.classList.add('hidden');
+            }
+
+            const containerWidth = document.getElementById('canvasContainer').clientWidth || 700;
+            calculateCoordinates(root, 0, 40, containerWidth - 40, containerWidth);
+
+            // Helper to recursively collect edges and nodes
+            function drawNodesAndEdges(node) {
+                if (!node) return;
+
+                // Draw left child edge
+                if (node.left) {
+                    drawEdge(node.x, node.y, node.left.x, node.left.y, highlightState.edges?.[`${node.id}-${node.left.id}`]);
+                    drawNodesAndEdges(node.left);
+                }
+
+                // Draw right child edge
+                if (node.right) {
+                    drawEdge(node.x, node.y, node.right.x, node.right.y, highlightState.edges?.[`${node.id}-${node.right.id}`]);
+                    drawNodesAndEdges(node.right);
+                }
+
+                // Draw Node circle & text
+                const nodeStatus = highlightState.nodes?.[node.id] || 'normal';
+                drawNode(node.x, node.y, node.data, nodeStatus);
+            }
+
+            drawNodesAndEdges(root);
+        }
+
+        function drawEdge(x1, y1, x2, y2, isHighlighted) {
+            const edgesGroup = document.getElementById('edgesGroup');
+            const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            line.setAttribute("x1", x1);
+            line.setAttribute("y1", y1);
+            line.setAttribute("x2", x2);
+            line.setAttribute("y2", y2);
+            line.setAttribute("stroke", isHighlighted ? "#f59e0b" : "#334155");
+            line.setAttribute("stroke-width", isHighlighted ? "3" : "2");
+            line.setAttribute("class", "edge-element");
+            edgesGroup.appendChild(line);
+        }
+
+        function drawNode(x, y, data, status) {
+            const nodesGroup = document.getElementById('nodesGroup');
+            const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            g.setAttribute("transform", `translate(${x}, ${y})`);
+            g.setAttribute("class", "node-element");
+
+            const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            circle.setAttribute("r", "20");
+
+            // Style variants according to node operation status
+            if (status === 'visiting') {
+                circle.setAttribute("fill", "#f59e0b");
+                circle.setAttribute("stroke", "#fde047");
+                circle.setAttribute("stroke-width", "3");
+                circle.setAttribute("class", "shadow-lg shadow-amber-500/50");
+            } else if (status === 'found') {
+                circle.setAttribute("fill", "#10b981");
+                circle.setAttribute("stroke", "#6ee7b7");
+                circle.setAttribute("stroke-width", "3");
+            } else if (status === 'visited') {
+                circle.setAttribute("fill", "#6366f1");
+                circle.setAttribute("stroke", "#a5b4fc");
+                circle.setAttribute("stroke-width", "2");
+            } else { // normal
+                circle.setAttribute("fill", "#0f172a");
+                circle.setAttribute("stroke", "#38bdf8");
+                circle.setAttribute("stroke-width", "2");
+            }
+
+            const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            text.setAttribute("text-anchor", "middle");
+            text.setAttribute("dy", ".3em");
+            text.setAttribute("fill", "#ffffff");
+            text.setAttribute("font-weight", "600");
+            text.setAttribute("font-size", "13");
+            text.setAttribute("font-family", "JetBrains Mono, monospace");
+            text.textContent = data;
+
+            g.appendChild(circle);
+            g.appendChild(text);
+            nodesGroup.appendChild(g);
+        }
+
+        // --- TREE OPERATIONS WITH ANIMATED STEPPING ---
+
+        // 1. Recursive Insertion
+        async function insertValue(data) {
+            if (isAnimating) return;
+            setAnimating(true, `Inserting ${data}...`);
+            appendConsoleLog(`Executing: insertRecursion(root, ${data})`, 'system');
+
+            highlightCodeLine(18, false, `Starting insertion of value ${data}`);
+            await sleep(animationDelay);
+
+            if (!root) {
+                highlightCodeLine(19, true, `Root is null. Returning new BSnode(${data})`);
+                await sleep(animationDelay);
+                highlightCodeLine(20);
+                root = new BSNode(data);
+                renderTree();
+                appendConsoleLog(`Created root node with data = ${data}`, 'success');
+            } else {
+                root = await animateInsert(root, data);
+            }
+
+            renderTree();
+            highlightCodeLine(49, false, `Insertion complete for ${data}`);
+            setAnimating(false, 'Ready');
+        }
+
+        async function animateInsert(current, data) {
+            if (current === null) {
+                highlightCodeLine(19, true, `Reached null spot. Creating new BSnode(${data})`);
+                await sleep(animationDelay);
+                highlightCodeLine(20);
+                return new BSNode(data);
+            }
+
+            // Highlight comparison node
+            renderTree({ nodes: { [current.id]: 'visiting' } });
+            highlightCodeLine(22, false, `Comparing insert value (${data}) with node data (${current.data})`);
+            appendConsoleLog(`Comparing ${data} with current node ${current.data}`);
+            await sleep(animationDelay);
+
+            if (data < current.data) {
+                highlightCodeLine(22, true, `${data} < ${current.data} -> Going to left subtree`);
+                await sleep(animationDelay);
+                highlightCodeLine(23);
+                current.left = await animateInsert(current.left, data);
+            } else if (data > current.data) {
+                highlightCodeLine(24, true, `${data} > ${current.data} -> Going to right subtree`);
+                await sleep(animationDelay);
+                highlightCodeLine(25);
+                current.right = await animateInsert(current.right, data);
+            } else {
+                appendConsoleLog(`Value ${data} already exists in BST (duplicates ignored)`, 'highlight');
+                highlightCodeLine(27, false, `Value duplicate found. Returning unchanged.`);
+                await sleep(animationDelay);
+            }
+
+            return current;
+        }
+
+        // 2. Recursive Search (From C# commented code block)
+        async function searchValue(target) {
+            if (isAnimating) return;
+            if (!root) {
+                appendConsoleLog(`Tree is empty. Cannot search.`, 'error');
+                return;
+            }
+
+            setAnimating(true, `Searching ${target}...`);
+            appendConsoleLog(`Executing: searchRecursion(root, ${target})`, 'system');
+            
+            highlightCodeLine(30, false, `Starting search target = ${target}`);
+            await sleep(animationDelay);
+
+            const found = await animateSearch(root, target);
+
+            if (found) {
+                appendConsoleLog(`Result: Value ${target} FOUND in tree!`, 'success');
+            } else {
+                renderTree();
+                appendConsoleLog(`Result: Value ${target} NOT FOUND in tree.`, 'error');
+                highlightCodeLine(31, true, `Reached null. Target ${target} does not exist.`);
+            }
+
+            setAnimating(false, 'Ready');
+        }
+
+        async function animateSearch(current, target) {
+            if (current === null) {
+                highlightCodeLine(31, true, `current is null. Target not found.`);
+                await sleep(animationDelay);
+                return false;
+            }
+
+            renderTree({ nodes: { [current.id]: 'visiting' } });
+            highlightCodeLine(32, false, `Checking if node data (${current.data}) == target (${target})`);
+            appendConsoleLog(`Inspecting node: ${current.data}`);
+            await sleep(animationDelay);
+
+            if (current.data === target) {
+                renderTree({ nodes: { [current.id]: 'found' } });
+                highlightCodeLine(32, true, `Match found! (${current.data} == ${target})`);
+                await sleep(animationDelay * 1.5);
+                return true;
+            }
+
+            if (target < current.data) {
+                highlightCodeLine(33, true, `${target} < ${current.data} -> Search left branch`);
+                await sleep(animationDelay);
+                highlightCodeLine(34);
+                return await animateSearch(current.left, target);
+            } else {
+                highlightCodeLine(35, true, `${target} > ${current.data} -> Search right branch`);
+                await sleep(animationDelay);
+                highlightCodeLine(36);
+                return await animateSearch(current.right, target);
+            }
+        }
+
+        // 3. In-Order Traversal (printInOrder method)
+        async function runInOrderTraversal() {
+            if (isAnimating) return;
+            if (!root) {
+                appendConsoleLog(`Tree is empty.`, 'error');
+                return;
+            }
+
+            setAnimating(true, 'Running In-Order Traversal...');
+            appendConsoleLog(`=== Executing: printInOrder(root) ===`, 'system');
+            
+            const visitedNodes = new Set();
+            let traversalOutput = [];
+
+            await animateInOrder(root, visitedNodes, traversalOutput);
+
+            appendConsoleLog(`In-Order Traversal Complete. Result: [ ${traversalOutput.join(' ')} ]`, 'success');
+            renderTree();
+            highlightCodeLine(53, false, 'Traversal finished');
+            setAnimating(false, 'Ready');
+        }
+
+        async function animateInOrder(node, visitedSet, outputArr) {
+            if (node !== null) {
+                highlightCodeLine(40, true, `node != null (${node.data}). Recursing left...`);
+                await sleep(animationDelay);
+
+                // Visit Left
+                highlightCodeLine(41);
+                await animateInOrder(node.left, visitedSet, outputArr);
+
+                // Visit Root (Print)
+                visitedSet.add(node.id);
+                outputArr.push(node.data);
+                
+                const currentHighlights = {};
+                visitedSet.forEach(id => currentHighlights[id] = 'visited');
+                currentHighlights[node.id] = 'found'; // Highlight active visit
+                
+                renderTree({ nodes: currentHighlights });
+                
+                highlightCodeLine(42, true, `Console.Write(${node.data} + " ")`);
+                appendConsoleLog(`Console.Write: ${node.data}`, 'highlight');
+                await sleep(animationDelay);
+
+                // Visit Right
+                highlightCodeLine(43);
+                await animateInOrder(node.right, visitedSet, outputArr);
+            } else {
+                highlightCodeLine(40, false, `node is null. Returning back up.`);
+                await sleep(animationDelay / 2);
+            }
+        }
+
+        // Load Preset Demo matching C# Main method
+        async function loadCsharpDemo() {
+            if (isAnimating) return;
+            root = null;
+            clearConsoleLog();
+            appendConsoleLog("=== BST INSERT & SEARCH DEMO ===", "system");
+
+            // Node values from C# Main: 5, 6, 4, 3
+            const values = [5, 6, 4, 3];
+            for (const val of values) {
+                await insertValue(val);
+            }
+
+            appendConsoleLog("Demo initial state loaded successfully.", "success");
+        }
+
+        // UI State Helpers
+        function setAnimating(status, text) {
+            isAnimating = status;
+            const indicator = document.getElementById('statusIndicator');
+            const statusText = document.getElementById('statusText');
+            
+            statusText.textContent = text;
+            
+            if (status) {
+                indicator.className = "inline-block w-2 h-2 rounded-full bg-amber-500 animate-ping";
+            } else {
+                indicator.className = "inline-block w-2 h-2 rounded-full bg-emerald-500";
+            }
+
+            // Disable buttons during animation
+            document.querySelectorAll('button, input').forEach(el => {
+                if (el.id !== 'speedSlider') {
+                    el.disabled = status;
+                    if (status) el.classList.add('opacity-50', 'cursor-not-allowed');
+                    else el.classList.remove('opacity-50', 'cursor-not-allowed');
+                }
+            });
+        }
+
+        // Event Listeners Setup
+        document.addEventListener('DOMContentLoaded', () => {
+            initCodePanel();
+            loadCsharpDemo();
+
+            // Insert Button
+            document.getElementById('insertBtn').addEventListener('click', () => {
+                const input = document.getElementById('insertInput');
+                const val = parseInt(input.value);
+                if (!isNaN(val)) {
+                    insertValue(val);
+                    input.value = '';
+                }
+            });
+
+            document.getElementById('insertInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') document.getElementById('insertBtn').click();
+            });
+
+            // Search Button
+            document.getElementById('searchBtn').addEventListener('click', () => {
+                const input = document.getElementById('searchInput');
+                const val = parseInt(input.value);
+                if (!isNaN(val)) {
+                    searchValue(val);
+                    input.value = '';
+                }
+            });
+
+            document.getElementById('searchInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') document.getElementById('searchBtn').click();
+            });
+
+            // Traversal
+            document.getElementById('inOrderBtn').addEventListener('click', runInOrderTraversal);
+
+            // Preset Demo
+            document.getElementById('presetDemoBtn').addEventListener('click', loadCsharpDemo);
+
+            // Clear Tree
+            document.getElementById('clearTreeBtn').addEventListener('click', () => {
+                if (isAnimating) return;
+                root = null;
+                renderTree();
+                clearConsoleLog();
+                appendConsoleLog("Tree cleared.", "system");
+                highlightCodeLine(null, false, "Tree reset.");
+            });
+
+            // Clear Log
+            document.getElementById('clearLogBtn').addEventListener('click', clearConsoleLog);
+
+            // Random Tree Generator
+            document.getElementById('randomTreeBtn').addEventListener('click', async () => {
+                if (isAnimating) return;
+                root = null;
+                clearConsoleLog();
+                appendConsoleLog("Generating random BST...", "system");
+                const count = Math.floor(Math.random() * 4) + 4; // 4 to 7 nodes
+                const nums = new Set();
+                while (nums.size < count) {
+                    nums.add(Math.floor(Math.random() * 50) + 1);
+                }
+                for (let num of nums) {
+                    await insertValue(num);
+                }
+            });
+
+            // Animation Speed Control
+            const speedSlider = document.getElementById('speedSlider');
+            const speedValue = document.getElementById('speedValue');
+            speedSlider.addEventListener('input', (e) => {
+                animationDelay = parseInt(e.target.value);
+                speedValue.textContent = `${animationDelay}ms`;
+            });
+
+            // Window resize handler for SVG adjustments
+            window.addEventListener('resize', () => renderTree());
+        });
+    </script>
+</body>
+</html>
